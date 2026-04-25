@@ -2,7 +2,7 @@
 set -euo pipefail
 
 APP_VERSION="${APP_VERSION:-dev-local}"
-APP_NAME="my_tool"
+APP_NAME="${APP_NAME:-$(basename "$PWD" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9_-]/_/g')}"
 OUTPUT_DIR="dist"
 
 # ===== PLATFORM TOGGLES (DELETE WHAT YOU DON'T NEED) =====
