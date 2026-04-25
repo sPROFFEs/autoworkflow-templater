@@ -70,6 +70,15 @@ fi
 $PYTHON_CMD -m pip install --upgrade pip >/dev/null
 $PYTHON_CMD -m pip install pyinstaller >/dev/null
 
+# Install project dependencies so PyInstaller can bundle them.
+# Checks the most common requirements file locations; installs all that exist.
+for req in requirements.txt requirements/base.txt requirements/prod.txt requirements/main.txt; do
+  if [ -f "$req" ]; then
+    echo "[+] Installing dependencies from $req"
+    $PYTHON_CMD -m pip install -r "$req"
+  fi
+done
+
 mkdir -p "$OUTPUT_DIR"
 TMP_VERSION_FILE="version.py"
 echo "__version__ = '$APP_VERSION'" > "$TMP_VERSION_FILE"
