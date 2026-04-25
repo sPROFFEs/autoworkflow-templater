@@ -10,6 +10,11 @@
 *.dll
 *.dylib
 
+# Exception: embedded assets (e.g. icons, native libs baked in via go:embed,
+# Python --add-data, Java resources). Anything under an assets/ directory is
+# intentionally part of the source tree, not a build output.
+!**/assets/**
+
 # Common extensionless executables
 /a.out
 /my_tool
