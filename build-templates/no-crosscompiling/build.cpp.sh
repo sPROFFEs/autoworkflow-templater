@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # ═══════════════════════════════════════════════════════════════════════════════
-#  JAVA BUILD SCRIPT (Maven → portable JAR + per-OS launcher wrappers)
+#  C++ BUILD SCRIPT (CMake-based, native per-OS)
 #
-#  Java produces a portable JAR; we add small launcher scripts (.sh / .bat) so
-#  each platform has a binary with the right extension for the release page.
-#  If you need a true single binary, switch this to GraalVM native-image.
+#  Cross-compiling C/C++ with system dependencies is fragile, so each platform
+#  builds on its own native runner. Defaults to CMake; switch to Make/Meson/etc
+#  by replacing the BUILD STEPS block.
 #
 #  Three zones below:
 #    🔒 LAUNCHER CONTRACT   — do not edit, the CI workflow depends on this
@@ -23,8 +23,8 @@ APP_NAME="${APP_NAME:-$(basename "$PWD" | tr '[:upper:]' '[:lower:]' | sed 's/[^
 OUTPUT_DIR="dist"
 BUILD_LINUX="${BUILD_LINUX:-1}"
 BUILD_WINDOWS="${BUILD_WINDOWS:-1}"
+OS_NAME="$(uname -s || echo unknown)"
 
-command -v java >/dev/null 2>&1 || { echo "ERROR: java no instalado"; exit 1; }
 mkdir -p "$OUTPUT_DIR"
 
 
@@ -32,65 +32,94 @@ mkdir -p "$OUTPUT_DIR"
 # ║ ⚙️   PROJECT CONFIG — FILL IN                                              ║
 # ╚═══════════════════════════════════════════════════════════════════════════╝
 
-# Build tool: "maven" (uses pom.xml) or "gradle" (uses build.gradle[.kts]).
-BUILD_TOOL="maven"
+# Build directory CMake will use. Wiped at the start of each build.
+BUILD_DIR="build"
 
-# Maven goals. "package" produces a JAR. Use "package shade:shade" or similar
-# if you need a fat/uber JAR. Override via MAVEN_GOALS=... if needed.
-MAVEN_GOALS=(-B "-Drevision=$APP_VERSION" package)
+# CMake build type. Release / Debug / RelWithDebInfo / MinSizeRel.
+CMAKE_BUILD_TYPE="${CMAKE_BUILD_TYPE:-Release}"
 
-# Gradle tasks. "clean shadowJar" if you use the Shadow plugin for fat JARs.
-GRADLE_TASKS=(clean build "-Pversion=$APP_VERSION")
+# CMake generator. Empty = let CMake pick the platform default.
+#   "Ninja"        — fast, install with apt/choco
+#   "Unix Makefiles"
+#   "Visual Studio 17 2022"  — Windows only, MSVC
+CMAKE_GENERATOR="${CMAKE_GENERATOR:-}"
+
+# Extra cmake configure flags. Use -D<var>=<val> for project options.
+EXTRA_CMAKE_FLAGS=()
+# Example: EXTRA_CMAKE_FLAGS+=(-DUSE_OPENSSL=ON -DBUILD_TESTING=OFF)
+# Example: EXTRA_CMAKE_FLAGS+=(-DCMAKE_PREFIX_PATH=/opt/myroot)
+
+# CMake target name. Usually equals APP_NAME, sometimes different in CMakeLists.
+CMAKE_TARGET="${CMAKE_TARGET:-$APP_NAME}"
 
 
 # ╔═══════════════════════════════════════════════════════════════════════════╗
 # ║ 🔨  BUILD STEPS — EDIT / ADD / REMOVE FREELY                               ║
+# ║                                                                           ║
+# ║  Replace this entire block if you use Make/Meson/Bazel/etc.               ║
 # ╚═══════════════════════════════════════════════════════════════════════════╝
 
-case "$BUILD_TOOL" in
-  maven)
-    command -v mvn >/dev/null 2>&1 || { echo "ERROR: maven no instalado"; exit 1; }
-    mvn "${MAVEN_GOALS[@]}"
-    JAR_PATH="$(find target -maxdepth 1 -type f -name '*.jar' ! -name '*-sources.jar' ! -name '*-javadoc.jar' | head -n 1 || true)"
-    ;;
-  gradle)
-    if [ -x ./gradlew ]; then GRADLE_BIN="./gradlew"; else GRADLE_BIN="gradle"; fi
-    command -v "$GRADLE_BIN" >/dev/null 2>&1 || [ -x "$GRADLE_BIN" ] || { echo "ERROR: gradle no instalado"; exit 1; }
-    "$GRADLE_BIN" "${GRADLE_TASKS[@]}"
-    JAR_PATH="$(find build/libs -maxdepth 1 -type f -name '*.jar' ! -name '*-sources.jar' ! -name '*-javadoc.jar' | head -n 1 || true)"
-    ;;
-  *) echo "ERROR: BUILD_TOOL desconocido: $BUILD_TOOL"; exit 1 ;;
-esac
+command -v cmake >/dev/null 2>&1 || { echo "ERROR: cmake no instalado"; exit 1; }
+[ -f CMakeLists.txt ] || { echo "ERROR: CMakeLists.txt no encontrado en $PWD"; exit 1; }
 
-[ -n "$JAR_PATH" ] || { echo "ERROR: no se encontró JAR generado."; exit 1; }
-cp "$JAR_PATH" "$OUTPUT_DIR/$APP_NAME.jar"
+rm -rf "$BUILD_DIR"
+CMAKE_CONFIG_FLAGS=(
+  -B "$BUILD_DIR"
+  -DCMAKE_BUILD_TYPE="$CMAKE_BUILD_TYPE"
+  -DAPP_VERSION="$APP_VERSION"
+  "${EXTRA_CMAKE_FLAGS[@]}"
+)
+[ -n "$CMAKE_GENERATOR" ] && CMAKE_CONFIG_FLAGS+=(-G "$CMAKE_GENERATOR")
 
-# ─── Linux launcher (delete if you don't ship Linux) ───────────────────────
-if [ "$BUILD_LINUX" = "1" ]; then
-  cat > "$OUTPUT_DIR/$APP_NAME" <<EOF
-#!/usr/bin/env bash
-SCRIPT_DIR="\$(cd "\$(dirname "\$0")" && pwd)"
-exec java -jar "\$SCRIPT_DIR/$APP_NAME.jar" "\$@"
-EOF
+cmake "${CMAKE_CONFIG_FLAGS[@]}"
+cmake --build "$BUILD_DIR" --config "$CMAKE_BUILD_TYPE" --target "$CMAKE_TARGET" --parallel
+
+LINUX_DONE=0
+WINDOWS_DONE=0
+
+# Find the produced binary. CMake writes to different paths per generator:
+#   Single-config (Make/Ninja):    $BUILD_DIR/<APP_NAME>[.exe]
+#   Multi-config (VS/Xcode):       $BUILD_DIR/<config>/<APP_NAME>[.exe]
+locate_binary() {
+  local name="$1"
+  local candidates=(
+    "$BUILD_DIR/$name"
+    "$BUILD_DIR/$CMAKE_BUILD_TYPE/$name"
+    "$BUILD_DIR/bin/$name"
+    "$BUILD_DIR/bin/$CMAKE_BUILD_TYPE/$name"
+  )
+  for c in "${candidates[@]}"; do
+    [ -f "$c" ] && { echo "$c"; return 0; }
+  done
+  return 1
+}
+
+# ─── Linux build (delete this block if you don't ship Linux) ───────────────
+if [ "$BUILD_LINUX" = "1" ] && [ "$OS_NAME" = "Linux" ]; then
+  bin="$(locate_binary "$APP_NAME")" || { echo "ERROR: no se localizó el ejecutable Linux en $BUILD_DIR/"; exit 1; }
+  cp "$bin" "$OUTPUT_DIR/$APP_NAME"
   chmod +x "$OUTPUT_DIR/$APP_NAME"
+  LINUX_DONE=1
 fi
 
-# ─── Windows launcher (delete if you don't ship Windows) ───────────────────
+# ─── Windows build (delete this block if you don't ship Windows) ───────────
 if [ "$BUILD_WINDOWS" = "1" ]; then
-  cat > "$OUTPUT_DIR/$APP_NAME.bat" <<EOF
-@echo off
-set SCRIPT_DIR=%~dp0
-java -jar "%SCRIPT_DIR%$APP_NAME.jar" %*
-EOF
+  case "$OS_NAME" in MINGW*|MSYS*|CYGWIN*)
+    bin="$(locate_binary "${APP_NAME}.exe")" || { echo "ERROR: no se localizó el .exe en $BUILD_DIR/"; exit 1; }
+    cp "$bin" "$OUTPUT_DIR/$APP_NAME.exe"
+    WINDOWS_DONE=1
+    ;;
+  esac
 fi
 
 
 # ╔═══════════════════════════════════════════════════════════════════════════╗
 # ║ 🔒  LAUNCHER CONTRACT — DO NOT EDIT                                       ║
-# ║                                                                           ║
-# ║  Java releases ship: <APP_NAME>.jar + launcher wrapper per platform.      ║
 # ╚═══════════════════════════════════════════════════════════════════════════╝
-[ -f "$OUTPUT_DIR/$APP_NAME.jar" ] || { echo "ERROR: falta JAR en $OUTPUT_DIR/"; exit 1; }
-[ "$BUILD_LINUX"   = "1" ] && { [ -f "$OUTPUT_DIR/$APP_NAME"     ] || { echo "ERROR: falta launcher Linux";   exit 1; }; }
-[ "$BUILD_WINDOWS" = "1" ] && { [ -f "$OUTPUT_DIR/$APP_NAME.bat" ] || { echo "ERROR: falta launcher Windows"; exit 1; }; }
+if [ "$BUILD_LINUX" = "1" ] && [ "$LINUX_DONE" -ne 1 ]; then
+  echo "ERROR: BUILD_LINUX=1 pero el job actual no es Linux. Usa runner Linux o BUILD_LINUX=0."; exit 1
+fi
+if [ "$BUILD_WINDOWS" = "1" ] && [ "$WINDOWS_DONE" -ne 1 ]; then
+  echo "ERROR: BUILD_WINDOWS=1 pero el job actual no es Windows. C++ no cross-compila por defecto."; exit 1
+fi
 echo "[+] Artifacts generados en $OUTPUT_DIR/"

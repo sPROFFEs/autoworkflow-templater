@@ -30,10 +30,10 @@ jobs:
           WW="${BUILD_WINDOWS}"
 
           case "$LANG" in
-            go|python|rust|node|java|dotnet|ruby|php) ;;
+            go|python|rust|node|java|dotnet|ruby|php|c|cpp) ;;
             *)
               echo "ERROR: PROJECT_LANG invalido: $LANG"
-              echo "Valores permitidos: go | python | rust | node | java | dotnet | ruby | php"
+              echo "Valores permitidos: go | python | rust | node | java | dotnet | ruby | php | c | cpp"
               exit 1
               ;;
           esac
@@ -51,7 +51,7 @@ jobs:
             go|rust|node|dotnet|java|ruby|php)
               CROSS_SUPPORTED="1"
               ;;
-            python)
+            python|c|cpp)
               CROSS_SUPPORTED="0"
               ;;
           esac
@@ -303,6 +303,19 @@ jobs:
         with:
           php-version: ${{ env.PHP_VERSION }}
 
+      - name: Setup C/C++ toolchain (Linux)
+        if: ${{ env.PROJECT_LANG == 'c' || env.PROJECT_LANG == 'cpp' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          apt-get update -qq
+          apt-get install -y -qq \
+            -o Dpkg::Options::=--force-confdef \
+            -o Dpkg::Options::=--force-confold \
+            build-essential cmake ninja-build pkg-config > /dev/null
+          gcc --version | head -n 1
+          cmake --version | head -n 1
+
       - name: Build from tag version (native Linux)
         shell: bash
         run: |
@@ -422,6 +435,20 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ env.PHP_VERSION }}
+
+      - name: Setup C/C++ toolchain (Windows)
+        if: ${{ env.PROJECT_LANG == 'c' || env.PROJECT_LANG == 'cpp' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Windows runners normally ship MinGW, MSVC, and CMake. GNU make is
+          # often missing — install it via Chocolatey if it's not on PATH.
+          if ! command -v make >/dev/null 2>&1; then
+            choco install -y --no-progress make >/dev/null
+          fi
+          gcc --version | head -n 1 || true
+          cmake --version | head -n 1 || true
+          make --version | head -n 1
 
       - name: Build from tag version (native Windows)
         shell: bash
