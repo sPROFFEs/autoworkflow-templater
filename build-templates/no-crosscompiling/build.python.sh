@@ -28,16 +28,44 @@ if [ -z "$ENTRY_POINT" ]; then
   }
 fi
 
-# Resolve Python interpreter: Windows runners expose 'python', not 'python3'
+# Resolve Python interpreter.
+#
+# Priority:
+#   1. $pythonLocation (set by actions/setup-python) – avoids the Windows App
+#      Execution Alias stub that intercepts 'python'/'python3' on the PATH and
+#      exits with code 49 when no argument is the Microsoft Store redirect.
+#   2. Runtime --version test of python3 / python – catches real installs even
+#      when $pythonLocation is absent (local dev, non-GitHub runners, etc.).
+#
+# We deliberately do NOT use `command -v` because on Windows the alias stub
+# passes `command -v` but fails on actual execution.
 PYTHON_CMD=""
-if command -v python3 >/dev/null 2>&1; then
-  PYTHON_CMD="python3"
-elif command -v python >/dev/null 2>&1; then
-  PYTHON_CMD="python"
-else
-  echo "ERROR: python/python3 no instalado"
-  exit 1
+
+if [ -n "${pythonLocation:-}" ]; then
+  # Normalize Windows backslashes so bash path tests work inside Git Bash.
+  PY_DIR="${pythonLocation//\\//}"
+  for candidate in "${PY_DIR}/python3" "${PY_DIR}/python3.exe" \
+                   "${PY_DIR}/python"  "${PY_DIR}/python.exe"; do
+    if [ -f "$candidate" ]; then
+      PYTHON_CMD="$candidate"
+      break
+    fi
+  done
 fi
+
+if [ -z "$PYTHON_CMD" ]; then
+  for candidate in python3 python; do
+    if $candidate --version >/dev/null 2>&1; then
+      PYTHON_CMD="$candidate"
+      break
+    fi
+  done
+fi
+
+[ -n "$PYTHON_CMD" ] || {
+  echo "ERROR: python/python3 no instalado o no accesible."
+  exit 1
+}
 
 $PYTHON_CMD -m pip install --upgrade pip >/dev/null
 $PYTHON_CMD -m pip install pyinstaller >/dev/null
