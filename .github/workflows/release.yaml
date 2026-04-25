@@ -429,7 +429,19 @@ jobs:
 
   release:
     needs: [plan, build_cross, build_native_linux, build_native_windows]
-    if: ${{ needs.plan.result == 'success' && needs.build_cross.result != 'failure' && needs.build_native_linux.result != 'failure' && needs.build_native_windows.result != 'failure' && (needs.build_cross.result == 'success' || needs.build_native_linux.result == 'success' || needs.build_native_windows.result == 'success') }}
+    # always() forces this job's if-expression to be evaluated even when upstream
+    # jobs were skipped (e.g. build_cross skipped for Python, build_native_linux
+    # skipped for Windows-only builds).  Without it GitHub propagates the
+    # skipped status directly to this job and never checks the expression.
+    if: >-
+      ${{ always() &&
+          needs.plan.result == 'success' &&
+          needs.build_cross.result != 'failure' &&
+          needs.build_native_linux.result != 'failure' &&
+          needs.build_native_windows.result != 'failure' &&
+          (needs.build_cross.result == 'success' ||
+           needs.build_native_linux.result == 'success' ||
+           needs.build_native_windows.result == 'success') }}
     runs-on: [self-hosted, debian-12]
     permissions:
       contents: write
@@ -445,6 +457,9 @@ jobs:
           pattern: release-artifacts-*
           merge-multiple: true
           path: release-files
+          # Artifact names that were never uploaded (skipped build jobs) are
+          # silently ignored; we only fail later if release-files/ is empty.
+          error-on-no-match: false
 
       - name: Assert release files exist
         shell: bash
