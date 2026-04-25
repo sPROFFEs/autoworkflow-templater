@@ -37,7 +37,10 @@ mkdir -p "$OUTPUT_DIR" "$GOMODCACHE" "$GOCACHE"
 LDFLAGS="-s -w -X main.Version=${APP_VERSION}"
 
 # Extra `go build` flags. Add tags, race detector, custom -gcflags here.
-EXTRA_BUILD_FLAGS=(-trimpath)
+# -buildvcs=false avoids "error obtaining VCS status: exit status 128" when
+# running inside CI runners with mismatched ownership (the build always runs
+# from ./code/ inside the launcher-managed repo, so VCS stamping is fragile).
+EXTRA_BUILD_FLAGS=(-trimpath -buildvcs=false)
 # Example: EXTRA_BUILD_FLAGS+=(-tags "release netgo")
 
 # CGO is off by default for fully static binaries. Set to 1 if you link against C.
