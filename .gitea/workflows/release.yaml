@@ -12,6 +12,10 @@ jobs:
       PROJECT_LANG: 'go'
       BUILD_LINUX: '1'
       BUILD_WINDOWS: '1'
+      # Set to '1' to force native dual-runner even for languages that normally
+      # cross-compile (Go+Fyne, Rust with C deps, etc). The launcher writes
+      # this value when you pick "both native runners" in the bootstrap UI.
+      FORCE_NATIVE: '0'
     outputs:
       project_lang: ${{ steps.plan.outputs.project_lang }}
       cross_supported: ${{ steps.plan.outputs.cross_supported }}
@@ -46,15 +50,21 @@ jobs:
             exit 1
           fi
 
+          case "${FORCE_NATIVE:-0}" in 0|1) ;; *) echo "ERROR: FORCE_NATIVE debe ser 0 o 1"; exit 1 ;; esac
+
           CROSS_SUPPORTED="0"
-          case "$LANG" in
-            go|rust|node|dotnet|java|ruby|php)
-              CROSS_SUPPORTED="1"
-              ;;
-            python|c|cpp)
-              CROSS_SUPPORTED="0"
-              ;;
-          esac
+          if [ "${FORCE_NATIVE:-0}" = "1" ]; then
+            CROSS_SUPPORTED="0"
+          else
+            case "$LANG" in
+              go|rust|node|dotnet|java|ruby|php)
+                CROSS_SUPPORTED="1"
+                ;;
+              python|c|cpp)
+                CROSS_SUPPORTED="0"
+                ;;
+            esac
+          fi
 
           if [ "$CROSS_SUPPORTED" = "1" ]; then
             MODE="cross"
