@@ -20,7 +20,7 @@ OUTPUT_DIR="dist"
 BUILD_LINUX="${BUILD_LINUX:-1}"
 BUILD_WINDOWS="${BUILD_WINDOWS:-1}"
 
-command -v dotnet >/dev/null 2>&1 || { echo "ERROR: dotnet no instalado"; exit 1; }
+command -v dotnet >/dev/null 2>&1 || { echo "ERROR: dotnet is not installed"; exit 1; }
 export DOTNET_CLI_TELEMETRY_OPTOUT=1
 mkdir -p "$OUTPUT_DIR"
 
@@ -75,6 +75,6 @@ fi
 # ╔═══════════════════════════════════════════════════════════════════════════╗
 # ║ 🔒  LAUNCHER CONTRACT — DO NOT EDIT                                       ║
 # ╚═══════════════════════════════════════════════════════════════════════════╝
-[ "$BUILD_LINUX"   = "1" ] && { [ -f "$OUTPUT_DIR/$APP_NAME"     ] || { echo "ERROR: falta binario Linux en $OUTPUT_DIR/"; exit 1; }; }
-[ "$BUILD_WINDOWS" = "1" ] && { [ -f "$OUTPUT_DIR/$APP_NAME.exe" ] || { echo "ERROR: falta EXE Windows en $OUTPUT_DIR/"; exit 1; }; }
-echo "[+] Artifacts generados en $OUTPUT_DIR/"
+[ "$BUILD_LINUX"   = "1" ] && { [ -f "$OUTPUT_DIR/$APP_NAME"     ] || { echo "ERROR: Linux binary missing in $OUTPUT_DIR/"; exit 1; }; }
+[ "$BUILD_WINDOWS" = "1" ] && { [ -f "$OUTPUT_DIR/$APP_NAME.exe" ] || { echo "ERROR: Windows EXE missing in $OUTPUT_DIR/"; exit 1; }; }
+echo "[+] Artifacts written to $OUTPUT_DIR/"

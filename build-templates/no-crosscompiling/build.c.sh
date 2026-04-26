@@ -56,9 +56,9 @@ EXTRA_MAKE_FLAGS=(-j"$(nproc 2>/dev/null || echo 2)")
 # ║  Meson, or raw gcc invocations.                                           ║
 # ╚═══════════════════════════════════════════════════════════════════════════╝
 
-command -v make >/dev/null 2>&1 || { echo "ERROR: make no instalado"; exit 1; }
-command -v "$CC_BIN" >/dev/null 2>&1 || { echo "ERROR: $CC_BIN no instalado"; exit 1; }
-[ -f Makefile ] || [ -f makefile ] || { echo "ERROR: no se encontró Makefile en $PWD"; exit 1; }
+command -v make >/dev/null 2>&1 || { echo "ERROR: make is not installed"; exit 1; }
+command -v "$CC_BIN" >/dev/null 2>&1 || { echo "ERROR: $CC_BIN is not installed"; exit 1; }
+[ -f Makefile ] || [ -f makefile ] || { echo "ERROR: Makefile not found in $PWD"; exit 1; }
 
 # Inject APP_VERSION as a -D flag so the source can use it.
 export CFLAGS="${CFLAGS:-} -DAPP_VERSION=\"$APP_VERSION\""
@@ -72,7 +72,7 @@ WINDOWS_DONE=0
 # ─── Linux build (delete this block if you don't ship Linux) ───────────────
 if [ "$BUILD_LINUX" = "1" ] && [ "$OS_NAME" = "Linux" ]; then
   CC="$CC_BIN" make $MAKE_TARGET "${EXTRA_MAKE_FLAGS[@]}"
-  [ -f "$BUILT_BINARY_LINUX" ] || { echo "ERROR: Make no produjo $BUILT_BINARY_LINUX"; exit 1; }
+  [ -f "$BUILT_BINARY_LINUX" ] || { echo "ERROR: Make did not produce $BUILT_BINARY_LINUX"; exit 1; }
   cp "$BUILT_BINARY_LINUX" "$OUTPUT_DIR/$APP_NAME"
   chmod +x "$OUTPUT_DIR/$APP_NAME"
   LINUX_DONE=1
@@ -82,7 +82,7 @@ fi
 if [ "$BUILD_WINDOWS" = "1" ]; then
   case "$OS_NAME" in MINGW*|MSYS*|CYGWIN*)
     CC="$CC_BIN" make $MAKE_TARGET "${EXTRA_MAKE_FLAGS[@]}"
-    [ -f "$BUILT_BINARY_WINDOWS" ] || { echo "ERROR: Make no produjo $BUILT_BINARY_WINDOWS"; exit 1; }
+    [ -f "$BUILT_BINARY_WINDOWS" ] || { echo "ERROR: Make did not produce $BUILT_BINARY_WINDOWS"; exit 1; }
     cp "$BUILT_BINARY_WINDOWS" "$OUTPUT_DIR/$APP_NAME.exe"
     WINDOWS_DONE=1
     ;;
@@ -94,9 +94,9 @@ fi
 # ║ 🔒  LAUNCHER CONTRACT — DO NOT EDIT                                       ║
 # ╚═══════════════════════════════════════════════════════════════════════════╝
 if [ "$BUILD_LINUX" = "1" ] && [ "$LINUX_DONE" -ne 1 ]; then
-  echo "ERROR: BUILD_LINUX=1 pero el job actual no es Linux. Usa runner Linux o BUILD_LINUX=0."; exit 1
+  echo "ERROR: BUILD_LINUX=1 but this job is not running on Linux. Use a Linux runner or set BUILD_LINUX=0."; exit 1
 fi
 if [ "$BUILD_WINDOWS" = "1" ] && [ "$WINDOWS_DONE" -ne 1 ]; then
-  echo "ERROR: BUILD_WINDOWS=1 pero el job actual no es Windows. C no cross-compila por defecto."; exit 1
+  echo "ERROR: BUILD_WINDOWS=1 but this job is not running on Windows. C does not cross-compile by default."; exit 1
 fi
-echo "[+] Artifacts generados en $OUTPUT_DIR/"
+echo "[+] Artifacts written to $OUTPUT_DIR/"

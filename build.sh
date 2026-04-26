@@ -14,7 +14,7 @@ BUILD_LINUX="${BUILD_LINUX:-1}"
 BUILD_WINDOWS="${BUILD_WINDOWS:-1}"
 # ==========================================================
 
-command -v go >/dev/null 2>&1 || { echo "ERROR: go no instalado"; exit 1; }
+command -v go >/dev/null 2>&1 || { echo "ERROR: go is not installed"; exit 1; }
 
 export GOPATH="${GOPATH:-$PWD/.go}"
 export GOMODCACHE="${GOMODCACHE:-$GOPATH/pkg/mod}"
@@ -26,7 +26,7 @@ if [ "$BUILD_LINUX" = "1" ]; then
   CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
     go build -trimpath -ldflags "-s -w -X main.Version=${APP_VERSION}" \
     -o "$OUTPUT_DIR/$APP_NAME"
-  [ -f "$OUTPUT_DIR/$APP_NAME" ] || { echo "ERROR: falta ELF Linux"; exit 1; }
+  [ -f "$OUTPUT_DIR/$APP_NAME" ] || { echo "ERROR: Linux ELF binary missing"; exit 1; }
 fi
 # ===== LINUX BUILD END =====
 
@@ -35,8 +35,8 @@ if [ "$BUILD_WINDOWS" = "1" ]; then
   CGO_ENABLED=0 GOOS=windows GOARCH=amd64 \
     go build -trimpath -ldflags "-s -w -X main.Version=${APP_VERSION}" \
     -o "$OUTPUT_DIR/$APP_NAME.exe"
-  [ -f "$OUTPUT_DIR/$APP_NAME.exe" ] || { echo "ERROR: falta EXE Windows"; exit 1; }
+  [ -f "$OUTPUT_DIR/$APP_NAME.exe" ] || { echo "ERROR: Windows EXE missing"; exit 1; }
 fi
 # ===== WINDOWS BUILD END =====
 
-echo "[+] Artifacts generados en ${OUTPUT_DIR}/"
+echo "[+] Artifacts written to ${OUTPUT_DIR}/"

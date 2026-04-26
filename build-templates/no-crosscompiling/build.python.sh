@@ -40,7 +40,7 @@ if [ -z "$PYTHON_CMD" ]; then
     if $c --version >/dev/null 2>&1; then PYTHON_CMD="$c"; break; fi
   done
 fi
-[ -n "$PYTHON_CMD" ] || { echo "ERROR: python/python3 no instalado o no accesible."; exit 1; }
+[ -n "$PYTHON_CMD" ] || { echo "ERROR: python/python3 is not installed or not accessible."; exit 1; }
 # ╚═══════════════════════════════════════════════════════════════════════════╝
 
 
@@ -57,8 +57,8 @@ if [ -z "$ENTRY_POINT" ]; then
     [ -f "$candidate" ] && ENTRY_POINT="$candidate" && break
   done
   [ -n "$ENTRY_POINT" ] || {
-    echo "ERROR: no se encontró entry point Python."
-    echo "Define ENTRY_POINT=<archivo>.py o crea main.py."
+    echo "ERROR: could not detect the Python entry point."
+    echo "Set ENTRY_POINT=<file>.py or create main.py."
     exit 1
   }
 fi
@@ -127,17 +127,17 @@ fi
 # ║  Final asserts. The release job fails if these aren't met.                ║
 # ╚═══════════════════════════════════════════════════════════════════════════╝
 if [ "$BUILD_LINUX" = "1" ] && [ "$LINUX_DONE" = "1" ]; then
-  [ -f "$OUTPUT_DIR/$APP_NAME" ] || { echo "ERROR: falta binario Linux en $OUTPUT_DIR/"; exit 1; }
+  [ -f "$OUTPUT_DIR/$APP_NAME" ] || { echo "ERROR: Linux binary missing in $OUTPUT_DIR/"; exit 1; }
 fi
 if [ "$BUILD_WINDOWS" = "1" ] && [ "$WINDOWS_DONE" = "1" ]; then
-  [ -f "$OUTPUT_DIR/$APP_NAME.exe" ] || { echo "ERROR: falta EXE Windows en $OUTPUT_DIR/"; exit 1; }
+  [ -f "$OUTPUT_DIR/$APP_NAME.exe" ] || { echo "ERROR: Windows EXE missing in $OUTPUT_DIR/"; exit 1; }
 fi
 if [ "$BUILD_LINUX" = "1" ] && [ "$LINUX_DONE" -ne 1 ]; then
-  echo "ERROR: BUILD_LINUX=1 pero el job actual no es Linux. Usa el runner Linux o BUILD_LINUX=0."
+  echo "ERROR: BUILD_LINUX=1 but this job is not running on Linux. Use a Linux runner or set BUILD_LINUX=0."
   exit 1
 fi
 if [ "$BUILD_WINDOWS" = "1" ] && [ "$WINDOWS_DONE" -ne 1 ]; then
-  echo "ERROR: BUILD_WINDOWS=1 pero el job actual no es Windows. PyInstaller no cross-compila."
+  echo "ERROR: BUILD_WINDOWS=1 but this job is not running on Windows. PyInstaller does not cross-compile."
   exit 1
 fi
-echo "[+] Artifacts generados en $OUTPUT_DIR/"
+echo "[+] Artifacts written to $OUTPUT_DIR/"

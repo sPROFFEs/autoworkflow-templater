@@ -20,7 +20,7 @@ OUTPUT_DIR="dist"
 BUILD_LINUX="${BUILD_LINUX:-1}"
 BUILD_WINDOWS="${BUILD_WINDOWS:-1}"
 
-command -v go >/dev/null 2>&1 || { echo "ERROR: go no instalado"; exit 1; }
+command -v go >/dev/null 2>&1 || { echo "ERROR: go is not installed"; exit 1; }
 
 export GOPATH="${GOPATH:-$PWD/.go}"
 export GOMODCACHE="${GOMODCACHE:-$GOPATH/pkg/mod}"
@@ -116,6 +116,6 @@ fi
 # ╔═══════════════════════════════════════════════════════════════════════════╗
 # ║ 🔒  LAUNCHER CONTRACT — DO NOT EDIT                                       ║
 # ╚═══════════════════════════════════════════════════════════════════════════╝
-[ "$BUILD_LINUX"   = "1" ] && { [ -f "$OUTPUT_DIR/$APP_NAME"     ] || { echo "ERROR: falta ELF Linux en $OUTPUT_DIR/";  exit 1; }; }
-[ "$BUILD_WINDOWS" = "1" ] && { [ -f "$OUTPUT_DIR/$APP_NAME.exe" ] || { echo "ERROR: falta EXE Windows en $OUTPUT_DIR/"; exit 1; }; }
-echo "[+] Artifacts generados en $OUTPUT_DIR/"
+[ "$BUILD_LINUX"   = "1" ] && { [ -f "$OUTPUT_DIR/$APP_NAME"     ] || { echo "ERROR: Linux ELF binary missing in $OUTPUT_DIR/";  exit 1; }; }
+[ "$BUILD_WINDOWS" = "1" ] && { [ -f "$OUTPUT_DIR/$APP_NAME.exe" ] || { echo "ERROR: Windows EXE missing in $OUTPUT_DIR/"; exit 1; }; }
+echo "[+] Artifacts written to $OUTPUT_DIR/"

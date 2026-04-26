@@ -23,8 +23,8 @@ OUTPUT_DIR="dist"
 BUILD_LINUX="${BUILD_LINUX:-1}"
 BUILD_WINDOWS="${BUILD_WINDOWS:-1}"
 
-command -v php      >/dev/null 2>&1 || { echo "ERROR: php no instalado";      exit 1; }
-command -v composer >/dev/null 2>&1 || { echo "ERROR: composer no instalado"; exit 1; }
+command -v php      >/dev/null 2>&1 || { echo "ERROR: php is not installed";      exit 1; }
+command -v composer >/dev/null 2>&1 || { echo "ERROR: composer is not installed"; exit 1; }
 mkdir -p "$OUTPUT_DIR"
 
 
@@ -39,7 +39,7 @@ mkdir -p "$OUTPUT_DIR"
 #   - box-project/box:    composer require --dev humbug/box && vendor/bin/box compile
 #   - phar-composer:      vendor/bin/phar-composer build . build/${APP_NAME}.phar
 #   - custom Makefile:    make phar
-BUILD_PHAR_CMD=(echo "TODO: configura BUILD_PHAR_CMD en build.sh" "&&" "false")
+BUILD_PHAR_CMD=(echo "TODO: set BUILD_PHAR_CMD in build.sh" "&&" "false")
 
 
 # ╔═══════════════════════════════════════════════════════════════════════════╗
@@ -52,7 +52,7 @@ composer install --no-interaction --no-progress --prefer-dist
 "${BUILD_PHAR_CMD[@]}"
 
 [ -f "build/${APP_NAME}.phar" ] || {
-  echo "ERROR: el builder no produjo build/${APP_NAME}.phar"
+  echo "ERROR: build step did not produce build/${APP_NAME}.phar"
   exit 1
 }
 cp "build/${APP_NAME}.phar" "$OUTPUT_DIR/${APP_NAME}.phar"
@@ -80,7 +80,7 @@ fi
 # ╔═══════════════════════════════════════════════════════════════════════════╗
 # ║ 🔒  LAUNCHER CONTRACT — DO NOT EDIT                                       ║
 # ╚═══════════════════════════════════════════════════════════════════════════╝
-[ -f "$OUTPUT_DIR/${APP_NAME}.phar" ] || { echo "ERROR: falta PHAR en $OUTPUT_DIR/"; exit 1; }
-[ "$BUILD_LINUX"   = "1" ] && { [ -f "$OUTPUT_DIR/$APP_NAME"     ] || { echo "ERROR: falta launcher Linux";   exit 1; }; }
-[ "$BUILD_WINDOWS" = "1" ] && { [ -f "$OUTPUT_DIR/$APP_NAME.bat" ] || { echo "ERROR: falta launcher Windows"; exit 1; }; }
-echo "[+] Artifacts generados en $OUTPUT_DIR/"
+[ -f "$OUTPUT_DIR/${APP_NAME}.phar" ] || { echo "ERROR: PHAR missing in $OUTPUT_DIR/"; exit 1; }
+[ "$BUILD_LINUX"   = "1" ] && { [ -f "$OUTPUT_DIR/$APP_NAME"     ] || { echo "ERROR: Linux launcher missing";   exit 1; }; }
+[ "$BUILD_WINDOWS" = "1" ] && { [ -f "$OUTPUT_DIR/$APP_NAME.bat" ] || { echo "ERROR: Windows launcher missing"; exit 1; }; }
+echo "[+] Artifacts written to $OUTPUT_DIR/"

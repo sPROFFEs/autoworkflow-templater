@@ -59,8 +59,8 @@ CMAKE_TARGET="${CMAKE_TARGET:-$APP_NAME}"
 # ║  Replace this entire block if you use Make/Meson/Bazel/etc.               ║
 # ╚═══════════════════════════════════════════════════════════════════════════╝
 
-command -v cmake >/dev/null 2>&1 || { echo "ERROR: cmake no instalado"; exit 1; }
-[ -f CMakeLists.txt ] || { echo "ERROR: CMakeLists.txt no encontrado en $PWD"; exit 1; }
+command -v cmake >/dev/null 2>&1 || { echo "ERROR: cmake is not installed"; exit 1; }
+[ -f CMakeLists.txt ] || { echo "ERROR: CMakeLists.txt not found in $PWD"; exit 1; }
 
 rm -rf "$BUILD_DIR"
 CMAKE_CONFIG_FLAGS=(
@@ -96,7 +96,7 @@ locate_binary() {
 
 # ─── Linux build (delete this block if you don't ship Linux) ───────────────
 if [ "$BUILD_LINUX" = "1" ] && [ "$OS_NAME" = "Linux" ]; then
-  bin="$(locate_binary "$APP_NAME")" || { echo "ERROR: no se localizó el ejecutable Linux en $BUILD_DIR/"; exit 1; }
+  bin="$(locate_binary "$APP_NAME")" || { echo "ERROR: Linux executable not found in $BUILD_DIR/"; exit 1; }
   cp "$bin" "$OUTPUT_DIR/$APP_NAME"
   chmod +x "$OUTPUT_DIR/$APP_NAME"
   LINUX_DONE=1
@@ -105,7 +105,7 @@ fi
 # ─── Windows build (delete this block if you don't ship Windows) ───────────
 if [ "$BUILD_WINDOWS" = "1" ]; then
   case "$OS_NAME" in MINGW*|MSYS*|CYGWIN*)
-    bin="$(locate_binary "${APP_NAME}.exe")" || { echo "ERROR: no se localizó el .exe en $BUILD_DIR/"; exit 1; }
+    bin="$(locate_binary "${APP_NAME}.exe")" || { echo "ERROR: Windows EXE not found in $BUILD_DIR/"; exit 1; }
     cp "$bin" "$OUTPUT_DIR/$APP_NAME.exe"
     WINDOWS_DONE=1
     ;;
@@ -117,9 +117,9 @@ fi
 # ║ 🔒  LAUNCHER CONTRACT — DO NOT EDIT                                       ║
 # ╚═══════════════════════════════════════════════════════════════════════════╝
 if [ "$BUILD_LINUX" = "1" ] && [ "$LINUX_DONE" -ne 1 ]; then
-  echo "ERROR: BUILD_LINUX=1 pero el job actual no es Linux. Usa runner Linux o BUILD_LINUX=0."; exit 1
+  echo "ERROR: BUILD_LINUX=1 but this job is not running on Linux. Use a Linux runner or set BUILD_LINUX=0."; exit 1
 fi
 if [ "$BUILD_WINDOWS" = "1" ] && [ "$WINDOWS_DONE" -ne 1 ]; then
-  echo "ERROR: BUILD_WINDOWS=1 pero el job actual no es Windows. C++ no cross-compila por defecto."; exit 1
+  echo "ERROR: BUILD_WINDOWS=1 but this job is not running on Windows. C++ does not cross-compile by default."; exit 1
 fi
-echo "[+] Artifacts generados en $OUTPUT_DIR/"
+echo "[+] Artifacts written to $OUTPUT_DIR/"

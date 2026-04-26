@@ -24,7 +24,7 @@ OUTPUT_DIR="dist"
 BUILD_LINUX="${BUILD_LINUX:-1}"
 BUILD_WINDOWS="${BUILD_WINDOWS:-1}"
 
-command -v java >/dev/null 2>&1 || { echo "ERROR: java no instalado"; exit 1; }
+command -v java >/dev/null 2>&1 || { echo "ERROR: java is not installed"; exit 1; }
 mkdir -p "$OUTPUT_DIR"
 
 
@@ -49,20 +49,20 @@ GRADLE_TASKS=(clean build "-Pversion=$APP_VERSION")
 
 case "$BUILD_TOOL" in
   maven)
-    command -v mvn >/dev/null 2>&1 || { echo "ERROR: maven no instalado"; exit 1; }
+    command -v mvn >/dev/null 2>&1 || { echo "ERROR: maven is not installed"; exit 1; }
     mvn "${MAVEN_GOALS[@]}"
     JAR_PATH="$(find target -maxdepth 1 -type f -name '*.jar' ! -name '*-sources.jar' ! -name '*-javadoc.jar' | head -n 1 || true)"
     ;;
   gradle)
     if [ -x ./gradlew ]; then GRADLE_BIN="./gradlew"; else GRADLE_BIN="gradle"; fi
-    command -v "$GRADLE_BIN" >/dev/null 2>&1 || [ -x "$GRADLE_BIN" ] || { echo "ERROR: gradle no instalado"; exit 1; }
+    command -v "$GRADLE_BIN" >/dev/null 2>&1 || [ -x "$GRADLE_BIN" ] || { echo "ERROR: gradle is not installed"; exit 1; }
     "$GRADLE_BIN" "${GRADLE_TASKS[@]}"
     JAR_PATH="$(find build/libs -maxdepth 1 -type f -name '*.jar' ! -name '*-sources.jar' ! -name '*-javadoc.jar' | head -n 1 || true)"
     ;;
-  *) echo "ERROR: BUILD_TOOL desconocido: $BUILD_TOOL"; exit 1 ;;
+  *) echo "ERROR: unknown BUILD_TOOL: $BUILD_TOOL"; exit 1 ;;
 esac
 
-[ -n "$JAR_PATH" ] || { echo "ERROR: no se encontró JAR generado."; exit 1; }
+[ -n "$JAR_PATH" ] || { echo "ERROR: no JAR file found after build."; exit 1; }
 cp "$JAR_PATH" "$OUTPUT_DIR/$APP_NAME.jar"
 
 # ─── Linux launcher (delete if you don't ship Linux) ───────────────────────
@@ -90,7 +90,7 @@ fi
 # ║                                                                           ║
 # ║  Java releases ship: <APP_NAME>.jar + launcher wrapper per platform.      ║
 # ╚═══════════════════════════════════════════════════════════════════════════╝
-[ -f "$OUTPUT_DIR/$APP_NAME.jar" ] || { echo "ERROR: falta JAR en $OUTPUT_DIR/"; exit 1; }
-[ "$BUILD_LINUX"   = "1" ] && { [ -f "$OUTPUT_DIR/$APP_NAME"     ] || { echo "ERROR: falta launcher Linux";   exit 1; }; }
-[ "$BUILD_WINDOWS" = "1" ] && { [ -f "$OUTPUT_DIR/$APP_NAME.bat" ] || { echo "ERROR: falta launcher Windows"; exit 1; }; }
-echo "[+] Artifacts generados en $OUTPUT_DIR/"
+[ -f "$OUTPUT_DIR/$APP_NAME.jar" ] || { echo "ERROR: JAR missing in $OUTPUT_DIR/"; exit 1; }
+[ "$BUILD_LINUX"   = "1" ] && { [ -f "$OUTPUT_DIR/$APP_NAME"     ] || { echo "ERROR: Linux launcher missing";   exit 1; }; }
+[ "$BUILD_WINDOWS" = "1" ] && { [ -f "$OUTPUT_DIR/$APP_NAME.bat" ] || { echo "ERROR: Windows launcher missing"; exit 1; }; }
+echo "[+] Artifacts written to $OUTPUT_DIR/"

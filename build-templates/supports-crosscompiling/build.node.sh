@@ -20,8 +20,8 @@ OUTPUT_DIR="dist"
 BUILD_LINUX="${BUILD_LINUX:-1}"
 BUILD_WINDOWS="${BUILD_WINDOWS:-1}"
 
-command -v node >/dev/null 2>&1 || { echo "ERROR: node no instalado"; exit 1; }
-command -v npm  >/dev/null 2>&1 || { echo "ERROR: npm no instalado";  exit 1; }
+command -v node >/dev/null 2>&1 || { echo "ERROR: node is not installed"; exit 1; }
+command -v npm  >/dev/null 2>&1 || { echo "ERROR: npm is not installed";  exit 1; }
 mkdir -p "$OUTPUT_DIR"
 
 
@@ -41,8 +41,8 @@ if [ -z "$ENTRY_POINT" ]; then
     done
   fi
   [ -n "$ENTRY_POINT" ] || {
-    echo "ERROR: no se encontró entry point Node."
-    echo "Define ENTRY_POINT=<archivo>.js o establece 'main' en package.json."
+    echo "ERROR: could not detect the Node.js entry point."
+    echo "Set ENTRY_POINT=<file>.js or set the 'main' field in package.json."
     exit 1
   }
 fi
@@ -65,7 +65,7 @@ npm install --no-save pkg >/dev/null
 TARGETS=()
 [ "$BUILD_LINUX"   = "1" ] && TARGETS+=("$PKG_NODE_VERSION-linux-x64")
 [ "$BUILD_WINDOWS" = "1" ] && TARGETS+=("$PKG_NODE_VERSION-win-x64")
-[ "${#TARGETS[@]}" -gt 0 ] || { echo "ERROR: no hay targets habilitados."; exit 1; }
+[ "${#TARGETS[@]}" -gt 0 ] || { echo "ERROR: no build targets enabled (BUILD_LINUX and BUILD_WINDOWS are both 0)."; exit 1; }
 
 npx pkg "$ENTRY_POINT" \
   --targets "$(IFS=,; echo "${TARGETS[*]}")" \
@@ -75,6 +75,6 @@ npx pkg "$ENTRY_POINT" \
 # ╔═══════════════════════════════════════════════════════════════════════════╗
 # ║ 🔒  LAUNCHER CONTRACT — DO NOT EDIT                                       ║
 # ╚═══════════════════════════════════════════════════════════════════════════╝
-[ "$BUILD_LINUX"   = "1" ] && { [ -f "$OUTPUT_DIR/$APP_NAME"     ] || { echo "ERROR: falta binario Linux en $OUTPUT_DIR/"; exit 1; }; }
-[ "$BUILD_WINDOWS" = "1" ] && { [ -f "$OUTPUT_DIR/$APP_NAME.exe" ] || { echo "ERROR: falta EXE Windows en $OUTPUT_DIR/"; exit 1; }; }
-echo "[+] Artifacts generados en $OUTPUT_DIR/"
+[ "$BUILD_LINUX"   = "1" ] && { [ -f "$OUTPUT_DIR/$APP_NAME"     ] || { echo "ERROR: Linux binary missing in $OUTPUT_DIR/"; exit 1; }; }
+[ "$BUILD_WINDOWS" = "1" ] && { [ -f "$OUTPUT_DIR/$APP_NAME.exe" ] || { echo "ERROR: Windows EXE missing in $OUTPUT_DIR/"; exit 1; }; }
+echo "[+] Artifacts written to $OUTPUT_DIR/"

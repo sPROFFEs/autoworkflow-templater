@@ -94,4 +94,4 @@ test -n "$(find "$OUTPUT_DIR" -type f -print -quit)" || {
   echo "ERROR: no artifacts found in $OUTPUT_DIR/ — nothing to release."
   exit 1
 }
-echo "[+] Artifacts generados en $OUTPUT_DIR/"
+echo "[+] Artifacts written to $OUTPUT_DIR/"

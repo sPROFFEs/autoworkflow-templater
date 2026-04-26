@@ -1,61 +1,52 @@
 # plantilla-flow
 
-Plantilla base DevSecOps para herramientas de pentesting con versionado SSOT por Git tag.
+Base DevSecOps template for distributable tools, with SSOT versioning driven by Git tags.
 
-## Incluye
+## What's included
 - `.github/workflows/release.yaml` (GitHub Actions)
 - `.gitea/workflows/release.yaml` (Gitea Actions)
-- `publish.sh` (commit + push + tag + push tag)
-- `build.sh` (ejemplo de contrato por `APP_VERSION`)
-- `build-templates/` (plantillas por lenguaje)
-- `BUILD_CONTRACT.md` (reglas obligatorias de build)
-- `CHANGELOG.md` (Keep a Changelog)
-- `.gitignore` estricto contra binarios
+- `publish.sh` — commit + push + tag + push tag
+- `build.sh` — example build script (overwritten by the launcher on bootstrap)
+- `build-templates/` — per-language build script templates
+- `BUILD_CONTRACT.md` — mandatory build rules every `build.sh` must follow
+- `CHANGELOG.md` — Keep a Changelog format
+- `runners_setup/` — scripts and guide to provision self-hosted runners
+- `.gitignore` — strict binary exclusion rules
 
-## Reglas operativas
-- La version sale solo del tag (`vX.Y.Z`).
-- El workflow inyecta `APP_VERSION` a `build.sh`.
-- El workflow inyecta tambien `BUILD_LINUX` y `BUILD_WINDOWS` (0/1) a `build.sh`.
-- `build.sh` debe dejar artefactos en `dist/`.
-- Linux ELF se empaqueta en `.deb` (FPM), `.exe` se publica crudo.
-- Si no existe `## [X.Y.Z]` en `CHANGELOG.md`, la release falla.
-- El codigo de la herramienta vive en `./code/`. El `build.sh` generado por el launcher hace `cd code` antes de compilar.
+## Operational rules
+- The version comes **only** from the Git tag (`vX.Y.Z`).
+- The workflow injects `APP_VERSION` into `build.sh` at build time.
+- The workflow also injects `BUILD_LINUX` and `BUILD_WINDOWS` (0 or 1) into `build.sh`.
+- `build.sh` must deposit all release artifacts under `dist/`.
+- Linux ELF binaries are packaged into a `.deb` (via FPM) and published alongside the raw binary; `.exe` files are published as-is.
+- If `CHANGELOG.md` has no `## [X.Y.Z]` section matching the tag, the release job fails.
+- Source code lives in `./code/`. The launcher-generated `build.sh` does `cd code` before compiling.
 
-## Matriz de ejecucion (release.yaml)
-- Caso 1: lenguaje con cross-compiling + `BUILD_LINUX=1` y `BUILD_WINDOWS=1`.
-Se ejecuta un solo job Linux (`build_cross`) y genera ambos artefactos si el toolchain lo soporta.
-- Caso 2: lenguaje con cross-compiling + solo una plataforma activa.
-Se ejecuta `build_cross` con la plataforma desactivada en `BUILD_*`.
-- Caso 3: lenguaje sin cross-compiling + ambas plataformas activas.
-Se ejecutan dos jobs nativos: `build_native_linux` + `build_native_windows`.
-- Caso 4: lenguaje sin cross-compiling + solo una plataforma activa.
-Se ejecuta solo el job nativo correspondiente.
+## Execution matrix (release.yaml)
 
-Esta matriz aplica igual en GitHub Actions y en Gitea Actions.
+| Case | Condition | Jobs executed |
+|------|-----------|---------------|
+| 1 | Cross-compile language + `BUILD_LINUX=1` + `BUILD_WINDOWS=1` | `build_cross` (single Linux job, produces both binaries) |
+| 2 | Cross-compile language + only one platform enabled | `build_cross` with the other platform's flag set to 0 |
+| 3 | Native-only language + both platforms enabled | `build_native_linux` + `build_native_windows` |
+| 4 | Native-only language + only one platform enabled | The corresponding native job only |
 
-## Lenguajes soportados (selector de workflow)
-Variable: `PROJECT_LANG`
+This matrix applies identically on GitHub Actions and Gitea Actions.
 
-Valores permitidos:
-- `go`
-- `python`
-- `rust`
-- `node`
-- `java`
-- `dotnet`
-- `ruby`
-- `php`
+## Supported languages (`PROJECT_LANG`)
 
-## Alta de nuevo proyecto desde plantilla
-1. Copia el contenido de esta carpeta al repo nuevo (o usa el launcher).
-2. Ajusta `PROJECT_LANG`, `BUILD_LINUX`, `BUILD_WINDOWS` en el job `plan` del workflow.
-3. Copia una base desde `build-templates/supports-crosscompiling/` o `build-templates/no-crosscompiling/` a `build.sh` y adapta variables del proyecto.
-4. Mueve el codigo fuente a `./code/`.
-5. Verifica `BUILD_CONTRACT.md`.
-6. Actualiza `CHANGELOG.md` con `## [1.0.0] - YYYY-MM-DD`.
-7. Ejecuta `./publish.sh v1.0.0 "Initial release"`.
+`go` · `python` · `rust` · `node` · `java` · `dotnet` · `ruby` · `php` · `c` · `cpp` · `script`
 
-## Notas por plataforma
-- En GitHub usa `.github/workflows/release.yaml`.
-- En Gitea usa `.gitea/workflows/release.yaml`.
-- No mezcles acción de release de Gitea en GitHub ni viceversa. El launcher elimina la carpeta del provider que no aplica al bootstrap.
+## Bootstrapping a new project manually
+1. Copy the contents of this folder to your new repo (or use the launcher).
+2. Set `PROJECT_LANG`, `BUILD_LINUX`, `BUILD_WINDOWS` in the `plan` job of the workflow.
+3. Copy a template from `build-templates/supports-crosscompiling/` or `build-templates/no-crosscompiling/` to `build.sh` and adapt the project variables.
+4. Move your source code into `./code/`.
+5. Review `BUILD_CONTRACT.md`.
+6. Add `## [1.0.0] - YYYY-MM-DD` to `CHANGELOG.md`.
+7. Run `./publish.sh v1.0.0 "Initial release"`.
+
+## Platform notes
+- On GitHub, the active workflow file is `.github/workflows/release.yaml`.
+- On Gitea, the active workflow file is `.gitea/workflows/release.yaml`.
+- Do not mix GitHub and Gitea workflow files in the same active provider. The launcher removes the folder that does not apply during bootstrap.

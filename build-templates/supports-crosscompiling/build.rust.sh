@@ -20,7 +20,7 @@ OUTPUT_DIR="dist"
 BUILD_LINUX="${BUILD_LINUX:-1}"
 BUILD_WINDOWS="${BUILD_WINDOWS:-1}"
 
-command -v cargo >/dev/null 2>&1 || { echo "ERROR: cargo no instalado"; exit 1; }
+command -v cargo >/dev/null 2>&1 || { echo "ERROR: cargo is not installed"; exit 1; }
 mkdir -p "$OUTPUT_DIR"
 
 
@@ -61,10 +61,10 @@ fi
 
 # ─── Windows build (delete this block if you don't ship Windows) ───────────
 if [ "$BUILD_WINDOWS" = "1" ]; then
-  command -v rustup >/dev/null 2>&1 || { echo "ERROR: rustup no instalado"; exit 1; }
+  command -v rustup >/dev/null 2>&1 || { echo "ERROR: rustup is not installed"; exit 1; }
   rustup target add "$WIN_TARGET" >/dev/null
   if [[ "$WIN_TARGET" == *gnu* ]] && ! command -v x86_64-w64-mingw32-gcc >/dev/null 2>&1; then
-    echo "ERROR: falta linker MinGW (x86_64-w64-mingw32-gcc) para Windows cross-build."
+    echo "ERROR: MinGW linker (x86_64-w64-mingw32-gcc) not found — required for Windows cross-build."
     exit 1
   fi
   cargo build --profile "$CARGO_PROFILE" --target "$WIN_TARGET" "${EXTRA_CARGO_FLAGS[@]}"
@@ -77,6 +77,6 @@ fi
 # ╔═══════════════════════════════════════════════════════════════════════════╗
 # ║ 🔒  LAUNCHER CONTRACT — DO NOT EDIT                                       ║
 # ╚═══════════════════════════════════════════════════════════════════════════╝
-[ "$BUILD_LINUX"   = "1" ] && { [ -f "$OUTPUT_DIR/$APP_NAME"     ] || { echo "ERROR: falta ELF Linux en $OUTPUT_DIR/";  exit 1; }; }
-[ "$BUILD_WINDOWS" = "1" ] && { [ -f "$OUTPUT_DIR/$APP_NAME.exe" ] || { echo "ERROR: falta EXE Windows en $OUTPUT_DIR/"; exit 1; }; }
-echo "[+] Artifacts generados en $OUTPUT_DIR/"
+[ "$BUILD_LINUX"   = "1" ] && { [ -f "$OUTPUT_DIR/$APP_NAME"     ] || { echo "ERROR: Linux ELF binary missing in $OUTPUT_DIR/";  exit 1; }; }
+[ "$BUILD_WINDOWS" = "1" ] && { [ -f "$OUTPUT_DIR/$APP_NAME.exe" ] || { echo "ERROR: Windows EXE missing in $OUTPUT_DIR/"; exit 1; }; }
+echo "[+] Artifacts written to $OUTPUT_DIR/"

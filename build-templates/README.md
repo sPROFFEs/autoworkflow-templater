@@ -1,28 +1,33 @@
 # build-templates
 
-Plantillas de `build.sh` por lenguaje para adaptar en cada proyecto.
+Per-language `build.sh` templates to copy into a project and adapt.
 
-## Estructura
-- `supports-crosscompiling/`: lenguajes/estrategias que permiten generar Linux y Windows desde un mismo job (segun toolchain disponible).
-- `no-crosscompiling/`: lenguajes/estrategias que necesitan runner por plataforma para generar ambos artefactos.
+## Structure
 
-## Comportamiento por defecto
-- Todas las plantillas vienen con `BUILD_LINUX=1` y `BUILD_WINDOWS=1`.
-- Cada script separa bloques por plataforma con marcadores:
-  - `===== LINUX BUILD START/END =====`
-  - `===== WINDOWS BUILD START/END =====`
-- Si solo quieres una plataforma, tienes dos opciones:
-  1. Borrar el bloque de la otra plataforma.
-  2. Mantenerlo y ejecutar con `BUILD_LINUX=0` o `BUILD_WINDOWS=0`.
+- `supports-crosscompiling/` — languages/strategies that can produce both Linux and Windows binaries from a single Linux job (using cross-compilation toolchains).
+- `no-crosscompiling/` — languages/strategies that require a native runner per target platform.
 
-## Uso
-1. Copia la plantilla adecuada a `./build.sh`.
-2. Ajusta variables (`APP_NAME`, `ENTRY_POINT`, etc.).
-3. Revisa bloques Linux/Windows y elimina lo que no quieras.
-4. Asegura salida final en `dist/`.
-5. Verifica contrato en `../BUILD_CONTRACT.md`.
+## Default behaviour
 
-## Nota importante
-En algunos stacks (ej: Python + PyInstaller) no hay cross-compilado oficial Linux -> Windows dentro de la misma ejecución. En esos casos, la plantilla falla con mensaje claro para forzar:
-- runner Windows para `.exe`, o
-- desactivar `BUILD_WINDOWS`.
+All templates ship with `BUILD_LINUX=1` and `BUILD_WINDOWS=1`. Each script separates platform logic into clearly marked blocks:
+
+```
+===== LINUX BUILD START/END =====
+===== WINDOWS BUILD START/END =====
+```
+
+To target only one platform you have two options:
+1. Delete the block for the platform you don't need.
+2. Keep it and let the workflow drive it with `BUILD_LINUX=0` or `BUILD_WINDOWS=0`.
+
+## Usage
+
+1. Copy the appropriate template to `./build.sh`.
+2. Adjust project variables (`APP_NAME`, `ENTRY_POINT`, etc.).
+3. Review the Linux/Windows blocks and remove anything you don't need.
+4. Make sure all release artifacts end up in `dist/`.
+5. Verify the contract rules in `../BUILD_CONTRACT.md`.
+
+## Important note
+
+Some stacks (e.g. Python + PyInstaller) have no official Linux → Windows cross-compilation path within the same job. In those cases the template fails with a clear error message that tells you to either use a native Windows runner or disable `BUILD_WINDOWS`.

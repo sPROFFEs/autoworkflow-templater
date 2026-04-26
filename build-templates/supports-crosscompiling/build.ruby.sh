@@ -24,8 +24,8 @@ OUTPUT_DIR="dist"
 BUILD_LINUX="${BUILD_LINUX:-1}"
 BUILD_WINDOWS="${BUILD_WINDOWS:-1}"
 
-command -v ruby >/dev/null 2>&1 || { echo "ERROR: ruby no instalado"; exit 1; }
-command -v gem  >/dev/null 2>&1 || { echo "ERROR: gem no instalado";  exit 1; }
+command -v ruby >/dev/null 2>&1 || { echo "ERROR: ruby is not installed"; exit 1; }
+command -v gem  >/dev/null 2>&1 || { echo "ERROR: gem is not installed";  exit 1; }
 mkdir -p "$OUTPUT_DIR"
 
 
@@ -49,11 +49,11 @@ if { [ "$RUN_BUNDLE" = "yes" ] || { [ "$RUN_BUNDLE" = "auto" ] && [ -f Gemfile ]
   bundle install --jobs 4
 fi
 
-[ -f "$GEMSPEC" ] || { echo "ERROR: gemspec no encontrado en $GEMSPEC"; exit 1; }
+[ -f "$GEMSPEC" ] || { echo "ERROR: gemspec not found at $GEMSPEC"; exit 1; }
 APP_VERSION="$APP_VERSION" gem build "$GEMSPEC"
 
 GEM_PATH="$(find . -maxdepth 1 -type f -name '*.gem' | head -n 1 || true)"
-[ -n "$GEM_PATH" ] || { echo "ERROR: gem build no produjo .gem"; exit 1; }
+[ -n "$GEM_PATH" ] || { echo "ERROR: gem build produced no .gem file"; exit 1; }
 cp "$GEM_PATH" "$OUTPUT_DIR/"
 
 # ─── Linux launcher (delete if you don't ship Linux) ───────────────────────
@@ -77,6 +77,6 @@ fi
 # ╔═══════════════════════════════════════════════════════════════════════════╗
 # ║ 🔒  LAUNCHER CONTRACT — DO NOT EDIT                                       ║
 # ╚═══════════════════════════════════════════════════════════════════════════╝
-[ "$BUILD_LINUX"   = "1" ] && { [ -f "$OUTPUT_DIR/$APP_NAME"     ] || { echo "ERROR: falta launcher Linux en $OUTPUT_DIR/";   exit 1; }; }
-[ "$BUILD_WINDOWS" = "1" ] && { [ -f "$OUTPUT_DIR/$APP_NAME.bat" ] || { echo "ERROR: falta launcher Windows en $OUTPUT_DIR/"; exit 1; }; }
-echo "[+] Artifacts generados en $OUTPUT_DIR/"
+[ "$BUILD_LINUX"   = "1" ] && { [ -f "$OUTPUT_DIR/$APP_NAME"     ] || { echo "ERROR: Linux launcher missing in $OUTPUT_DIR/";   exit 1; }; }
+[ "$BUILD_WINDOWS" = "1" ] && { [ -f "$OUTPUT_DIR/$APP_NAME.bat" ] || { echo "ERROR: Windows launcher missing in $OUTPUT_DIR/"; exit 1; }; }
+echo "[+] Artifacts written to $OUTPUT_DIR/"
