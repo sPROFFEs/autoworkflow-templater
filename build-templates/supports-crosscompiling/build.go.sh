@@ -83,7 +83,8 @@ if [ "$BUILD_WINDOWS" = "1" ]; then
         echo "[+] Converting $PNG_SOURCE → icon.ico via ImageMagick (magick)"
         magick "$PNG_SOURCE" -define icon:auto-resize=16,32,48,256 icon.ico
         ICON_ICO="icon.ico"
-      elif command -v convert >/dev/null 2>&1; then
+      elif command -v convert >/dev/null 2>&1 && [[ "$(uname -s)" != MINGW* ]] && [[ "$(uname -s)" != MSYS* ]] && [[ "$(uname -s)" != CYGWIN* ]]; then
+        # `convert` on Windows is the system disk utility, not ImageMagick — skip it.
         echo "[+] Converting $PNG_SOURCE → icon.ico via ImageMagick (convert)"
         convert "$PNG_SOURCE" -define icon:auto-resize=16,32,48,256 icon.ico
         ICON_ICO="icon.ico"
