@@ -50,10 +50,38 @@ CGO_ENABLED_VALUE="${CGO_ENABLED:-0}"
 # multi-binary repos.
 BUILD_PACKAGE="."
 
+# Windows .exe icon. The build script auto-detects icon.ico in any of these
+# locations (first match wins). Leave the file out and the build proceeds
+# without a custom icon. To generate a multi-resolution icon.ico from a PNG:
+#   magick icon.png -define icon:auto-resize=16,32,48,256 icon.ico
+ICON_LOOKUP_PATHS=(icon.ico assets/icon.ico "${BUILD_PACKAGE}/icon.ico")
+
 
 # ╔═══════════════════════════════════════════════════════════════════════════╗
 # ║ 🔨  BUILD STEPS — EDIT / ADD / REMOVE FREELY                               ║
 # ╚═══════════════════════════════════════════════════════════════════════════╝
+
+# ─── Windows .exe icon embedding (auto, no-op if no icon.ico is found) ─────
+# Generates a Windows resource file (.syso) that the Go linker picks up
+# automatically because of its _windows suffix. Linux builds are unaffected.
+ICON_SYSO=""
+if [ "$BUILD_WINDOWS" = "1" ]; then
+  for candidate in "${ICON_LOOKUP_PATHS[@]}"; do
+    if [ -f "$candidate" ]; then ICON_ICO="$candidate"; break; fi
+  done
+  if [ -n "${ICON_ICO:-}" ]; then
+    if ! command -v rsrc >/dev/null 2>&1; then
+      echo "[+] Installing rsrc (Windows resource embedder) into .go/bin"
+      GOBIN="$PWD/.go/bin" go install github.com/akavel/rsrc@latest
+      export PATH="$PWD/.go/bin:$PATH"
+    fi
+    ICON_SYSO="${BUILD_PACKAGE}/rsrc_windows.syso"
+    echo "[+] Embedding $ICON_ICO into Windows .exe via $ICON_SYSO"
+    rsrc -ico "$ICON_ICO" -o "$ICON_SYSO"
+    # Trap removes the .syso on script exit so it never lands in git.
+    trap 'rm -f "'"$ICON_SYSO"'"' EXIT
+  fi
+fi
 
 # ─── Linux build (delete this block if you don't ship Linux) ───────────────
 if [ "$BUILD_LINUX" = "1" ]; then

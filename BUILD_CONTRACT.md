@@ -121,6 +121,40 @@ appropriate template over your existing `build.sh`.
 
 ---
 
+## Windows .exe icons (Go projects)
+
+Drop an **`icon.ico`** at one of these paths and `build.go.sh` will embed it
+automatically into the Windows binary as a PE32 resource:
+
+- `<repo>/icon.ico`
+- `<repo>/assets/icon.ico`
+- `<repo>/<BUILD_PACKAGE>/icon.ico` (next to your `package main`)
+
+Behind the scenes, the script auto-installs
+[`rsrc`](https://github.com/akavel/rsrc) into `.go/bin/`, generates a
+`rsrc_windows.syso` file, runs the build, and removes the `.syso` on exit
+(via `trap`). Linux builds aren't affected because the `_windows` suffix
+restricts the resource to that GOOS.
+
+If you only have a PNG, convert it once with ImageMagick:
+
+```bash
+magick icon.png -define icon:auto-resize=16,32,48,256 icon.ico
+```
+
+The 16/32/48/256 set covers File Explorer, taskbar, alt-tab and high-DPI
+displays. Commit the `.ico` next to the `.png`.
+
+> Note: this only handles the **Windows .exe icon** (visible in File Explorer
+> and shortcuts). For the **runtime icon** (window title bar, taskbar while
+> running) you also need `fyne.App.SetIcon(...)` in your code — that's
+> per-language and has nothing to do with the workflow.
+>
+> Linux uses `.desktop` entries (the `.deb` step can install one). macOS uses
+> `.app` bundles. If you need either, the build steps zone is the place.
+
+---
+
 ## Adding a new language
 
 1. Drop a `build.<lang>.sh` into the right `build-templates/` subdir, copying
