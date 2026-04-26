@@ -207,7 +207,7 @@ jobs:
             fpm \
               -s dir \
               -t deb \
-              -n my_tool \
+              -n "$(basename "$LINUX_BIN")" \
               -v "$VERSION" \
               --architecture amd64 \
               -C pkg-root \
@@ -364,7 +364,7 @@ jobs:
             fpm \
               -s dir \
               -t deb \
-              -n my_tool \
+              -n "$(basename "$LINUX_BIN")" \
               -v "$VERSION" \
               --architecture amd64 \
               -C pkg-root \
