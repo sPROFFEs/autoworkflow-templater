@@ -114,28 +114,64 @@ jobs:
 
       - name: Setup Go
         if: ${{ env.PROJECT_LANG == 'go' }}
-        uses: actions/setup-go@v5
-        with:
-          go-version: ${{ env.GO_VERSION }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          INSTALLED="$(go version 2>/dev/null | awk '{print $3}' || echo '')"
+          if [ "$INSTALLED" != "go${GO_VERSION}" ]; then
+            rm -rf /usr/local/go
+            curl -sSL "https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz" | tar -C /usr/local -xz
+          fi
+          export PATH="/usr/local/go/bin:$PATH"
+          echo "/usr/local/go/bin" >> "$GITHUB_PATH"
+          go version
 
       - name: Setup Node.js
         if: ${{ env.PROJECT_LANG == 'node' }}
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          MAJOR="${NODE_VERSION%%.*}"
+          if ! node --version 2>/dev/null | grep -q "^v${MAJOR}\."; then
+            apt-get update -qq
+            apt-get install -y -qq ca-certificates curl > /dev/null
+            curl -fsSL "https://deb.nodesource.com/setup_${MAJOR}.x" | bash - >/dev/null
+            apt-get install -y -qq nodejs > /dev/null
+          fi
+          node --version
+          npm --version
 
       - name: Setup Java
         if: ${{ env.PROJECT_LANG == 'java' }}
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: ${{ env.JAVA_VERSION }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! java -version 2>&1 | grep -q "\"${JAVA_VERSION}\."; then
+            apt-get update -qq
+            apt-get install -y -qq wget apt-transport-https > /dev/null
+            wget -qO /usr/share/keyrings/adoptium.asc \
+              https://packages.adoptium.net/artifactory/api/gpg/key/public
+            CODENAME="$(. /etc/os-release && echo "$VERSION_CODENAME")"
+            echo "deb [signed-by=/usr/share/keyrings/adoptium.asc] https://packages.adoptium.net/artifactory/deb ${CODENAME} main" \
+              > /etc/apt/sources.list.d/adoptium.list
+            apt-get update -qq
+            apt-get install -y -qq "temurin-${JAVA_VERSION}-jdk" > /dev/null
+          fi
+          java -version
 
       - name: Setup .NET
         if: ${{ env.PROJECT_LANG == 'dotnet' }}
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: ${{ env.DOTNET_VERSION }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          CHANNEL="${DOTNET_VERSION%.*}"
+          if ! dotnet --version 2>/dev/null | grep -q "^${CHANNEL%%.*}\."; then
+            curl -sSL https://dot.net/v1/dotnet-install.sh \
+              | bash -s -- --channel "$CHANNEL" --install-dir /usr/local/share/dotnet
+            echo "/usr/local/share/dotnet" >> "$GITHUB_PATH"
+            export PATH="/usr/local/share/dotnet:$PATH"
+          fi
+          dotnet --version
 
       - name: Setup Ruby
         if: ${{ env.PROJECT_LANG == 'ruby' }}
@@ -217,7 +253,7 @@ jobs:
           fi
 
       - name: Upload build artifacts (cross mode)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v3
         with:
           name: release-artifacts-cross
           path: |
@@ -253,15 +289,29 @@ jobs:
 
       - name: Setup Go
         if: ${{ env.PROJECT_LANG == 'go' }}
-        uses: actions/setup-go@v5
-        with:
-          go-version: ${{ env.GO_VERSION }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          INSTALLED="$(go version 2>/dev/null | awk '{print $3}' || echo '')"
+          if [ "$INSTALLED" != "go${GO_VERSION}" ]; then
+            rm -rf /usr/local/go
+            curl -sSL "https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz" | tar -C /usr/local -xz
+          fi
+          export PATH="/usr/local/go/bin:$PATH"
+          echo "/usr/local/go/bin" >> "$GITHUB_PATH"
+          go version
 
       - name: Setup Python
         if: ${{ env.PROJECT_LANG == 'python' }}
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          apt-get update -qq
+          apt-get install -y -qq \
+            -o Dpkg::Options::=--force-confdef \
+            -o Dpkg::Options::=--force-confold \
+            python3 python3-pip python3-venv > /dev/null
+          python3 --version
 
       - name: Setup Rust
         if: ${{ env.PROJECT_LANG == 'rust' }}
@@ -284,22 +334,50 @@ jobs:
 
       - name: Setup Node.js
         if: ${{ env.PROJECT_LANG == 'node' }}
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          MAJOR="${NODE_VERSION%%.*}"
+          if ! node --version 2>/dev/null | grep -q "^v${MAJOR}\."; then
+            apt-get update -qq
+            apt-get install -y -qq ca-certificates curl > /dev/null
+            curl -fsSL "https://deb.nodesource.com/setup_${MAJOR}.x" | bash - >/dev/null
+            apt-get install -y -qq nodejs > /dev/null
+          fi
+          node --version
+          npm --version
 
       - name: Setup Java
         if: ${{ env.PROJECT_LANG == 'java' }}
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: ${{ env.JAVA_VERSION }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! java -version 2>&1 | grep -q "\"${JAVA_VERSION}\."; then
+            apt-get update -qq
+            apt-get install -y -qq wget apt-transport-https > /dev/null
+            wget -qO /usr/share/keyrings/adoptium.asc \
+              https://packages.adoptium.net/artifactory/api/gpg/key/public
+            CODENAME="$(. /etc/os-release && echo "$VERSION_CODENAME")"
+            echo "deb [signed-by=/usr/share/keyrings/adoptium.asc] https://packages.adoptium.net/artifactory/deb ${CODENAME} main" \
+              > /etc/apt/sources.list.d/adoptium.list
+            apt-get update -qq
+            apt-get install -y -qq "temurin-${JAVA_VERSION}-jdk" > /dev/null
+          fi
+          java -version
 
       - name: Setup .NET
         if: ${{ env.PROJECT_LANG == 'dotnet' }}
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: ${{ env.DOTNET_VERSION }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          CHANNEL="${DOTNET_VERSION%.*}"
+          if ! dotnet --version 2>/dev/null | grep -q "^${CHANNEL%%.*}\."; then
+            curl -sSL https://dot.net/v1/dotnet-install.sh \
+              | bash -s -- --channel "$CHANNEL" --install-dir /usr/local/share/dotnet
+            echo "/usr/local/share/dotnet" >> "$GITHUB_PATH"
+            export PATH="/usr/local/share/dotnet:$PATH"
+          fi
+          dotnet --version
 
       - name: Setup Ruby
         if: ${{ env.PROJECT_LANG == 'ruby' }}
@@ -374,7 +452,7 @@ jobs:
           fi
 
       - name: Upload build artifacts (native Linux)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v3
         with:
           name: release-artifacts-native-linux
           path: |
@@ -411,9 +489,13 @@ jobs:
 
       - name: Setup Python
         if: ${{ env.PROJECT_LANG == 'python' }}
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! command -v python3 >/dev/null 2>&1 && ! command -v python >/dev/null 2>&1; then
+            choco install -y --no-progress python3 >/dev/null
+          fi
+          python3 --version 2>/dev/null || python --version
 
       - name: Setup Node.js
         if: ${{ env.PROJECT_LANG == 'node' }}
@@ -522,7 +604,7 @@ jobs:
           ./build.sh
 
       - name: Upload build artifacts (native Windows)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v3
         with:
           name: release-artifacts-native-windows
           path: dist/*
@@ -552,15 +634,26 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Download artifacts from all build jobs
-        uses: actions/download-artifact@v4
+      - name: Download artifacts (cross mode)
+        if: ${{ needs.build_cross.result == 'success' }}
+        uses: actions/download-artifact@v3
         with:
-          pattern: release-artifacts-*
-          merge-multiple: true
+          name: release-artifacts-cross
           path: release-files
-          # Artifact names that were never uploaded (skipped build jobs) are
-          # silently ignored; we only fail later if release-files/ is empty.
-          error-on-no-match: false
+
+      - name: Download artifacts (native Linux)
+        if: ${{ needs.build_native_linux.result == 'success' }}
+        uses: actions/download-artifact@v3
+        with:
+          name: release-artifacts-native-linux
+          path: release-files
+
+      - name: Download artifacts (native Windows)
+        if: ${{ needs.build_native_windows.result == 'success' }}
+        uses: actions/download-artifact@v3
+        with:
+          name: release-artifacts-native-windows
+          path: release-files
 
       - name: Assert release files exist
         shell: bash
